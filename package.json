@@ -75,7 +75,7 @@
     "ts-node": "^9.1.1"
   },
   "dependencies": {
-    "@johntalton/and-other-delights": "^3.0.2",
+    "@johntalton/and-other-delights": "^5.0.0",
     "@johntalton/mcp2221": "github:johntalton/mcp2221"
   }
 }
