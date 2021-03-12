@@ -76,6 +76,6 @@
   },
   "dependencies": {
     "@johntalton/and-other-delights": "^3.0.2",
-    "@johntalton/mcp2221": "../mcp2221"
+    "@johntalton/mcp2221": "github:johntalton/mcp2221"
   }
 }
