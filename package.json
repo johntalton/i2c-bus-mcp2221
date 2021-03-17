@@ -1,6 +1,6 @@
 {
   "name": "@johntalton/i2c-bus-mcp2221",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "",
   "type": "module",
   "exports": {
@@ -19,16 +19,28 @@
     "build:watch": "tsc -p . -w"
   },
   "eslintConfig": {
+    "ignorePatterns": [
+      "lib",
+      "test"
+    ],
     "extends": [
       "@johntalton/eslint-config/ts"
     ],
     "env": {
       "node": true
+    },
+    "rules": {
+      "max-len": [
+        "warn",
+        {
+          "code": 120
+        }
+      ]
     }
   },
   "mocha": {
     "spec": [
-      "test/*.spec.ts"
+      "test/*.spec.js"
     ],
     "grep": "@broken|@slow",
     "invert": true,
@@ -75,7 +87,7 @@
     "ts-node": "^9.1.1"
   },
   "dependencies": {
-    "@johntalton/and-other-delights": "^3.0.2",
-    "@johntalton/mcp2221": "github:johntalton/mcp2221"
+    "@johntalton/and-other-delights": "github:johntalton/and-other-delights#module",
+    "@johntalton/mcp2221": "file:../mcp2221"
   }
 }

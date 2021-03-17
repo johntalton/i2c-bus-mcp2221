@@ -1,1 +1,1 @@
-export * from './i2c-bus'
+export * from './i2c-bus.js'
