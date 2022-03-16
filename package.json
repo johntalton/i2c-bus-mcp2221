@@ -62,7 +62,7 @@
   "author": "johntalton@gmail.com",
   "license": "MIT",
   "devDependencies": {
-    "@johntalton/eslint-config": "github:johntalton/eslint-config",
+    "@johntalton/eslint-config": "^2.0.0",
     "@types/chai": "^4.2.14",
     "@typescript-eslint/eslint-plugin": "^5.14.0",
     "@types/mocha": "^9.1.0",
@@ -71,7 +71,7 @@
     "chai": "^4.2.0",
     "eslint": "^8.11.0",
     "eslint-plugin-fp": "^2.3.0",
-    "eslint-plugin-functional": "^3.1.0",
+
     "eslint-plugin-immutable": "^1.0.0",
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-jsdoc": "^38.0.3",
@@ -88,7 +88,7 @@
     "typescript": "^4.2.3"
   },
   "dependencies": {
-    "@johntalton/and-other-delights": "github:johntalton/and-other-delights#module",
+    "@johntalton/and-other-delights": "^6.0.0",
     "@johntalton/mcp2221": "file:../mcp2221"
   }
 }
