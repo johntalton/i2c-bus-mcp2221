@@ -101,15 +101,17 @@ export class I2CBusMCP2221 implements I2CBus {
 			new Uint8Array(bufferSource.buffer, bufferSource.byteOffset, bufferSource.byteLength) :
 			new Uint8Array(bufferSource)
 
-		const { status } = await this.device.i2c.writeData({ opaque, address, buffer: Uint8Array.from([ cmd ]) })
-		if (status !== 'success') { throw new Error('write failed') }
+		// const { status } = await this.device.i2c.writeData({ opaque, address, buffer: Uint8Array.from([ cmd ]) })
+		// if (status !== 'success') { throw new Error('write failed') }
+		// console.log('writeI2cBlock - write command', cmd)
 
-		const { status: status2 } = await this.device.i2c.writeData({ opaque, address, buffer: Uint8Array.from([ ...userData ]) })
+		const { status: status2 } = await this.device.i2c.writeData({ opaque, address, buffer: Uint8Array.from([ cmd, ...userData ]) })
 		if (status2 !== 'success') { throw new Error('write failed') }
 
 
 		const foo = await this.device.common.status({ opaque })
 		console.log(foo)
+		console.log('writeI2cBlock - write user data', foo, ...userData)
 
 		return {
 			bytesWritten: length,
