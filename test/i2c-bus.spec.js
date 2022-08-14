@@ -11,7 +11,7 @@ describe('I2CBusMCP2221', () => {
   it('should', async () => {
     const binding = {
       read: byteLength => console.log({ byteLength }),
-      write: sourceBuffer => console.log({ sourceBuffer })
+      write: bufferSource => console.log({ bufferSource })
     }
 
     const device = MCP2221A.from(binding)
