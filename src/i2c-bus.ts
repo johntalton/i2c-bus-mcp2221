@@ -12,7 +12,6 @@ import { MCP2221 } from '@johntalton/mcp2221'
 
 const delayMs = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-
 export type MCP2221Options = { opaquePrefix: string }
 const DEFAULT_OPTIONS: MCP2221Options = {
 	opaquePrefix: ''
@@ -102,7 +101,7 @@ export class I2CBusMCP2221 implements I2CBus {
 			new Uint8Array(bufferSource)
 
 		// const { status } = await this.device.i2c.writeData({ opaque, address, buffer: Uint8Array.from([ cmd ]) })
-		// if (status !== 'success') { throw new Error('write failed') }
+		// if (status !== 'success') { throw new Error('write cmd failed') }
 		// console.log('writeI2cBlock - write command', cmd)
 
 		const { status: status2 } = await this.device.i2c.writeData({ opaque, address, buffer: Uint8Array.from([ cmd, ...userData ]) })
@@ -131,10 +130,20 @@ export class I2CBusMCP2221 implements I2CBus {
 
 	async i2cWrite(address: number, length: number, bufferSource: I2CBufferSource): Promise<I2CWriteResult> {
 		const opaque = ''
-		const res = await this.device.i2c.writeData({ opaque, address, buffer: bufferSource })
 
 		const status = await this.device.common.status({ opaque })
-		console.log({ res, status })
+		if(status.i2cState !== 0) {
+			await this.device.common.status({ opaque, cancelI2c: true })
+
+			await delayMs(1)
+		}
+
+		const res = await this.device.i2c.writeData({ opaque, address, buffer: bufferSource })
+
+		if(res.statusCode != 0) {
+			console.log({ code: res.statusCode, state: res.i2cState})
+			throw new Error('write data no good')
+		}
 
 		return {
 			bytesWritten: length,
