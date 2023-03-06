@@ -54,7 +54,7 @@ export class I2CBusMCP2221 implements I2CBus {
 					 S Addr Rd [A] [Data] A [Data] A ... A [Data] NA P
 	 */
 	async readI2cBlock(address: number, cmd: number, length: number, _bufferSource: I2CBufferSource): Promise<I2CReadResult> {
-		const opaque = ''
+		const opaque = this.options.opaquePrefix
 		console.log('readI2cBlock ', address, cmd, length)
 		const { status } = await this.device.i2c.writeData({ opaque, address, buffer: Uint8Array.from([ cmd ]) })
 		if (status !== 'success') { throw new Error('write failed: ' + status) }
@@ -94,7 +94,7 @@ export class I2CBusMCP2221 implements I2CBus {
 	 * S Addr Wr [A] Comm [A] Data [A] Data [A] ... [A] Data [A] P
 	 */
 	async writeI2cBlock(address: number, cmd: number, length: number, bufferSource: I2CBufferSource): Promise<I2CWriteResult> {
-		const opaque = ''
+		const opaque = this.options.opaquePrefix
 
 		const userData = ArrayBuffer.isView(bufferSource) ?
 			new Uint8Array(bufferSource.buffer, bufferSource.byteOffset, bufferSource.byteLength) :
@@ -119,17 +119,28 @@ export class I2CBusMCP2221 implements I2CBus {
 	}
 
 	async i2cRead(address: number, length: number, _bufferSource: I2CBufferSource): Promise<I2CReadResult> {
-		const opaque = ''
+		const opaque = this.options.opaquePrefix
+
+		const status = await this.device.common.status({ opaque })
+		if(status.i2cState !== 0) {
+			await this.device.common.status({ opaque, cancelI2c: true })
+		}
+
+		await delayMs(1)
+
 		const res = await this.device.i2c.readData({ opaque, address, length })
 		console.log({ res })
+		const getRes = await this.device.i2c.readGetData({ opaque })
+		console.log({ getRes })
+		if(!getRes.validData) { throw new Error('invalid data') }
 		return {
 			bytesRead: length,
-			buffer: new ArrayBuffer(0)
+			buffer: getRes.buffer
 		}
 	}
 
 	async i2cWrite(address: number, length: number, bufferSource: I2CBufferSource): Promise<I2CWriteResult> {
-		const opaque = ''
+		const opaque = this.options.opaquePrefix
 
 		const status = await this.device.common.status({ opaque })
 		if(status.i2cState !== 0) {
