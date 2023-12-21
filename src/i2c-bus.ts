@@ -56,14 +56,14 @@ export class I2CBusMCP2221 implements I2CBus {
 	async readI2cBlock(address: number, cmd: number, length: number, _bufferSource: I2CBufferSource): Promise<I2CReadResult> {
 		const opaque = this.options.opaquePrefix
 		console.log('readI2cBlock ', address, cmd, length)
-		const { status } = await this.device.i2c.writeData({ opaque, address, buffer: Uint8Array.from([ cmd ]) })
-		if (status !== 'success') { throw new Error('write failed: ' + status) }
+		const { status } = await this.device.i2c.writeData({ opaque, address, buffer: Uint8Array.from([cmd]) })
+		if(status !== 'success') { throw new Error('write failed: ' + status) }
 		const statis = await this.device.common.status({ opaque })
-		console.log('readI2cblock - wriete command', statis)
+		console.log('readI2cBlock - write command', statis)
 
 		const result = await this.device.i2c.readData({ opaque, address, length }) // length
 		console.log('readI2cblock - request read', { result })
-		//if(result.status !== 'success') { throw new Error('not successfull readData') }
+		// if(result.status !== 'success') { throw new Error('not successfull readData') }
 		const statis2 = await this.device.common.status({ opaque })
 		console.log(statis2)
 
@@ -71,11 +71,11 @@ export class I2CBusMCP2221 implements I2CBus {
 
 		const data = await this.device.i2c.readGetData({ opaque })
 		console.log('readI2cBlock - get data', data)
-		//if(data.status !== 'success') { throw new Error('not successfull readData') }
+		// if(data.status !== 'success') { throw new Error('not successful readData') }
 
 		const { buffer, readBackBytes, validData } = data
 
-		if (!validData) {
+		if(!validData) {
 			console.log('invalid data', validData)
 			return {
 				bytesRead: -1,
@@ -104,8 +104,8 @@ export class I2CBusMCP2221 implements I2CBus {
 		// if (status !== 'success') { throw new Error('write cmd failed') }
 		// console.log('writeI2cBlock - write command', cmd)
 
-		const { status: status2 } = await this.device.i2c.writeData({ opaque, address, buffer: Uint8Array.from([ cmd, ...userData ]) })
-		if (status2 !== 'success') { throw new Error('write failed') }
+		const { status: status2 } = await this.device.i2c.writeData({ opaque, address, buffer: Uint8Array.from([cmd, ...userData]) })
+		if(status2 !== 'success') { throw new Error('write failed') }
 
 
 		const foo = await this.device.common.status({ opaque })
@@ -151,8 +151,8 @@ export class I2CBusMCP2221 implements I2CBus {
 
 		const res = await this.device.i2c.writeData({ opaque, address, buffer: bufferSource })
 
-		if(res.statusCode != 0) {
-			console.log({ code: res.statusCode, state: res.i2cState})
+		if(res.statusCode !== 0) {
+			console.log({ code: res.statusCode, state: res.i2cState })
 			throw new Error('write data no good')
 		}
 
