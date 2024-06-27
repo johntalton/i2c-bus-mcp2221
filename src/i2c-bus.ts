@@ -1,161 +1,110 @@
-/* eslint-disable fp/no-this */
-/* eslint-disable fp/no-mutation */
-/* eslint-disable immutable/no-this */
-/* eslint-disable no-magic-numbers */
-/* eslint-disable fp/no-unused-expression */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable immutable/no-mutation */
-/* eslint-disable fp/no-nil */
-/* eslint-disable fp/no-class */
-import { I2CBufferSource, I2CBus, I2CReadResult, I2CWriteResult } from '@johntalton/and-other-delights'
+import { I2CBufferSource, I2CScannableBus, I2CReadResult, I2CWriteResult, I2CBus } from '@johntalton/and-other-delights'
 import { MCP2221 } from '@johntalton/mcp2221'
 
-const delayMs = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+import { ready } from './utils/ready.js'
+import { read, readRepeatedStart } from './utils/read.js'
+import { write, writeNoSTOP } from './utils/write.js'
 
 export type MCP2221Options = { opaquePrefix: string }
 const DEFAULT_OPTIONS: MCP2221Options = {
 	opaquePrefix: ''
 }
 
-export class I2CBusMCP2221 implements I2CBus {
+export class I2CBusMCP2221 implements I2CScannableBus {
 	private readonly device: MCP2221
 	private readonly options: MCP2221Options
 
 	// factory
-	static from(device: MCP2221, options: Partial<MCP2221Options>): I2CBus {
+	static from(device: MCP2221, options: Partial<MCP2221Options> = {}): I2CScannableBus {
 		return new I2CBusMCP2221(device, options)
 	}
 
-	constructor(device: MCP2221, options: Partial<MCP2221Options>) {
+	constructor(device: MCP2221, options: Partial<MCP2221Options> = {}) {
 		this.device = device
 		this.options = { ...DEFAULT_OPTIONS, ...options }
 	}
 
-	// eslint-disable-next-line class-methods-use-this
-	get name(): string { return '' }
 
-	// eslint-disable-next-line class-methods-use-this
+	get name(): string { return 'I²C MCP2221' }
+
 	close(): void {
 		// await this.device.i2c.close()
 	}
 
-	/**
-	 * i2c_smbus_write_byte
-	 * S Addr Wr [A] Data [A] P
-	 */
-	async sendByte(address: number, byteValue: number): Promise<void> {
-		const opaque = this.options.opaquePrefix
-		await this.device.i2c.writeData({ opaque, address, buffer: Uint8Array.from([byteValue]) })
-	}
+	async scan(): Promise<number[]> {
+		function* range(start: number, end: number, step: number = 1): Generator<number, undefined, undefined> {
+			yield start
+			if (start >= end) return
+			yield* range(start + step, end, step)
+		}
 
-	/**
-	 * i2c_smbus_read_i2c_block_data
-	 * S Addr Wr [A] Comm [A]
-					 S Addr Rd [A] [Data] A [Data] A ... A [Data] NA P
-	 */
-	async readI2cBlock(address: number, cmd: number, length: number, _bufferSource: I2CBufferSource): Promise<I2CReadResult> {
-		const opaque = this.options.opaquePrefix
-		console.log('readI2cBlock ', address, cmd, length)
-		const { status } = await this.device.i2c.writeData({ opaque, address, buffer: Uint8Array.from([cmd]) })
-		if(status !== 'success') { throw new Error('write failed: ' + status) }
-		const statis = await this.device.common.status({ opaque })
-		console.log('readI2cBlock - write command', statis)
-
-		const result = await this.device.i2c.readData({ opaque, address, length }) // length
-		console.log('readI2cblock - request read', { result })
-		// if(result.status !== 'success') { throw new Error('not successfull readData') }
-		const statis2 = await this.device.common.status({ opaque })
-		console.log(statis2)
-
-		await delayMs(100)
-
-		const data = await this.device.i2c.readGetData({ opaque })
-		console.log('readI2cBlock - get data', data)
-		// if(data.status !== 'success') { throw new Error('not successful readData') }
-
-		const { buffer, readBackBytes, validData } = data
-
-		if(!validData) {
-			console.log('invalid data', validData)
-			return {
-				bytesRead: -1,
-				buffer: Uint8Array.from([])
+		async function* _scan(bus: I2CBus): AsyncGenerator<number, undefined, undefined> {
+			// console.log('_scan')
+			for (const address of range(0x08, 0x77)) {
+				// console.log('try', address)
+				try {
+					await bus.i2cRead(address, 1)
+					// console.log('yield', address)
+					yield address
+				}
+				catch {
+					//
+					// console.log('continue', address)
+					continue
+				}
 			}
 		}
 
-		return {
-			bytesRead: readBackBytes,
-			buffer
-		}
+		return Array.fromAsync(_scan(this))
 	}
 
-	/**
-	 * i2c_smbus_write_i2c_block_data
-	 * S Addr Wr [A] Comm [A] Data [A] Data [A] ... [A] Data [A] P
-	 */
+	async sendByte(address: number, byteValue: number): Promise<void> {
+		const opaque = this.options.opaquePrefix + '::sendByte'
+		await ready(this.device, opaque)
+		return write(this.device, address,  Uint8Array.from([ byteValue ]), opaque + '::write')
+			.then() // swallow return from call into void promise
+	}
+
+	async readI2cBlock(address: number, cmd: number, length: number, targetBuffer?: I2CBufferSource): Promise<I2CReadResult> {
+		const opaque = this.options.opaquePrefix + '::readI2cBlock'
+		// console.log(opaque, address, cmd)
+		await ready(this.device, opaque + '::ready')
+		await writeNoSTOP(this.device, address, Uint8Array.from([ cmd ]), opaque + '::writeNoStop')
+		// await ready(this.device, opaque + '::ready::interim')
+		return readRepeatedStart(this.device, address, length, targetBuffer, opaque + '::readRepeatedStart')
+	}
+
 	async writeI2cBlock(address: number, cmd: number, length: number, bufferSource: I2CBufferSource): Promise<I2CWriteResult> {
-		const opaque = this.options.opaquePrefix
+		const opaque = this.options.opaquePrefix + '::writeI2cBlock'
 
 		const userData = ArrayBuffer.isView(bufferSource) ?
-			new Uint8Array(bufferSource.buffer, bufferSource.byteOffset, bufferSource.byteLength) :
-			new Uint8Array(bufferSource)
+			new Uint8Array(bufferSource.buffer, bufferSource.byteOffset, length) :
+			new Uint8Array(bufferSource, 0, length)
 
-		// const { status } = await this.device.i2c.writeData({ opaque, address, buffer: Uint8Array.from([ cmd ]) })
-		// if (status !== 'success') { throw new Error('write cmd failed') }
-		// console.log('writeI2cBlock - write command', cmd)
+		const scratch = new Blob([ Uint8Array.from([ cmd ]), userData ])
+		const futureBuffer = scratch.arrayBuffer()
 
-		const { status: status2 } = await this.device.i2c.writeData({ opaque, address, buffer: Uint8Array.from([cmd, ...userData]) })
-		if(status2 !== 'success') { throw new Error('write failed') }
-
-
-		const foo = await this.device.common.status({ opaque })
-		console.log(foo)
-		console.log('writeI2cBlock - write user data', foo, ...userData)
+		await ready(this.device, opaque + '::ready')
+		const buffer = await futureBuffer
+		await write(this.device, address, buffer, opaque + '::write')
 
 		return {
 			bytesWritten: length,
-			buffer: userData.buffer
+			buffer: userData
 		}
 	}
 
-	async i2cRead(address: number, length: number, _bufferSource: I2CBufferSource): Promise<I2CReadResult> {
-		const opaque = this.options.opaquePrefix
-
-		const status = await this.device.common.status({ opaque })
-		if(status.i2cState !== 0) {
-			await this.device.common.status({ opaque, cancelI2c: true })
-		}
-
-		await delayMs(1)
-
-		const res = await this.device.i2c.readData({ opaque, address, length })
-		console.log({ res })
-		const getRes = await this.device.i2c.readGetData({ opaque })
-		console.log({ getRes })
-		if(!getRes.validData) { throw new Error('invalid data') }
-		return {
-			bytesRead: length,
-			buffer: getRes.buffer
-		}
+	async i2cRead(address: number, length: number, targetBuffer?: I2CBufferSource): Promise<I2CReadResult> {
+		const opaque = this.options.opaquePrefix + '::i2cRead'
+		await ready(this.device, opaque + '::ready')
+		return read(this.device, address, length, targetBuffer, opaque + '::read')
 	}
 
 	async i2cWrite(address: number, length: number, bufferSource: I2CBufferSource): Promise<I2CWriteResult> {
-		const opaque = this.options.opaquePrefix
-
-		const status = await this.device.common.status({ opaque })
-		if(status.i2cState !== 0) {
-			await this.device.common.status({ opaque, cancelI2c: true })
-
-			await delayMs(1)
-		}
-
-		const res = await this.device.i2c.writeData({ opaque, address, buffer: bufferSource })
-
-		if(res.statusCode !== 0) {
-			console.log({ code: res.statusCode, state: res.i2cState })
-			throw new Error('write data no good')
-		}
-
+		const opaque = this.options.opaquePrefix + '::i2cWrite'
+		await ready(this.device, opaque + '::ready')
+		await write(this.device, address, bufferSource, opaque + '::write')
+		// console.log('i2cWrite', length)
 		return {
 			bytesWritten: length,
 			buffer: new ArrayBuffer(0)
