@@ -69,7 +69,8 @@ export class I2CBusMCP2221 implements I2CScannableBus {
 		const opaque = this.options.opaquePrefix + '::readI2cBlock'
 		// console.log(opaque, address, cmd)
 		await ready(this.device, opaque + '::ready')
-		await writeNoSTOP(this.device, address, Uint8Array.from([ cmd ]), opaque + '::writeNoStop')
+		const cmdBuffer = Array.isArray(cmd) ? Uint8Array.from(cmd) : Uint8Array.from([ cmd ])
+		await writeNoSTOP(this.device, address, cmdBuffer, opaque + '::writeNoStop')
 		// await ready(this.device, opaque + '::ready::interim')
 		return readRepeatedStart(this.device, address, length, targetBuffer, opaque + '::readRepeatedStart')
 	}
@@ -81,7 +82,8 @@ export class I2CBusMCP2221 implements I2CScannableBus {
 			new Uint8Array(bufferSource.buffer, bufferSource.byteOffset, length) :
 			new Uint8Array(bufferSource, 0, length)
 
-		const scratch = new Blob([ Uint8Array.from([ cmd ]), userData ])
+		const cmdBuffer = Array.isArray(cmd) ? Uint8Array.from(cmd) : Uint8Array.from([ cmd ])
+		const scratch = new Blob([ cmdBuffer, userData ])
 		const futureBuffer = scratch.arrayBuffer()
 
 		await ready(this.device, opaque + '::ready')
