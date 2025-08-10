@@ -83,7 +83,7 @@ export class I2CBusMCP2221 implements I2CScannableBus {
 			new Uint8Array(bufferSource, 0, length)
 
 		const cmdBuffer = Array.isArray(cmd) ? Uint8Array.from(cmd) : Uint8Array.from([ cmd ])
-		const scratch = new Blob([ cmdBuffer, userData ])
+		const scratch = new Blob([ cmdBuffer, userData as BlobPart ])
 		const futureBuffer = scratch.arrayBuffer()
 
 		await ready(this.device, opaque + '::ready')

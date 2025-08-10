@@ -1,6 +1,6 @@
 {
   "name": "@johntalton/i2c-bus-mcp2221",
-  "version": "4.1.1",
+  "version": "4.1.2",
   "type": "module",
   "exports": {
     "import": "./lib/index.js",
@@ -27,7 +27,7 @@
     "typescript": "^5.5.2"
   },
   "dependencies": {
-    "@johntalton/and-other-delights": "^8.5.2",
+    "@johntalton/and-other-delights": "^8.5.3",
     "@johntalton/mcp2221": "^4.0.0"
   }
 }
