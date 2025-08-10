@@ -27,7 +27,7 @@
     "typescript": "^5.5.2"
   },
   "dependencies": {
-    "@johntalton/and-other-delights": "^8.3.0",
+    "@johntalton/and-other-delights": "^8.5.1",
     "@johntalton/mcp2221": "^4.0.0"
   }
 }
