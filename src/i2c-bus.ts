@@ -1,4 +1,4 @@
-import { I2CBufferSource, I2CScannableBus, I2CReadResult, I2CWriteResult, I2CBus } from '@johntalton/and-other-delights'
+import { I2CBufferSource, I2CReadResult, I2CWriteResult, I2CBus } from '@johntalton/and-other-delights'
 import { MCP2221 } from '@johntalton/mcp2221'
 
 import { ready } from './utils/ready.js'
@@ -10,12 +10,12 @@ const DEFAULT_OPTIONS: MCP2221Options = {
 	opaquePrefix: ''
 }
 
-export class I2CBusMCP2221 implements I2CScannableBus {
+export class I2CBusMCP2221 implements I2CBus {
 	private readonly device: MCP2221
 	private readonly options: MCP2221Options
 
 	// factory
-	static from(device: MCP2221, options: Partial<MCP2221Options> = {}): I2CScannableBus {
+	static from(device: MCP2221, options: Partial<MCP2221Options> = {}): I2CBus {
 		return new I2CBusMCP2221(device, options)
 	}
 
@@ -24,6 +24,8 @@ export class I2CBusMCP2221 implements I2CScannableBus {
 		this.options = { ...DEFAULT_OPTIONS, ...options }
 	}
 
+	get supportsMultiByteDataAddress() { return true }
+	get supportsScan() { return true }
 
 	get name(): string { return 'I²C MCP2221' }
 
